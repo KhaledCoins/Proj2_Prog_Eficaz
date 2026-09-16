@@ -24,6 +24,17 @@ IMOVEL = {
     "data_aquisicao": "2023-05-10",
 }
 
+NOVO_IMOVEL = {
+    "logradouro": "Brasil",
+    "tipo_logradouro": "Avenida",
+    "bairro": "Jardim Europa",
+    "cidade": "Campinas",
+    "cep": "13000-000",
+    "tipo": "casa",
+    "valor": 820000.0,
+    "data_aquisicao": "2022-11-03",
+}
+
 
 @patch("app.conecta")
 def test_listar_imoveis(mock_conecta, client):
@@ -95,3 +106,36 @@ def test_buscar_imovel_inexistente(mock_conecta, client):
     # Then
     assert resposta.status_code == 404
     assert resposta.get_json() == {"erro": "imovel nao encontrado"}
+
+
+@patch("app.conecta")
+def test_cadastrar_imovel(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.lastrowid = 2
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.post("/imoveis", json=NOVO_IMOVEL)
+
+    # Then
+    assert resposta.status_code == 201
+    assert resposta.get_json()["id"] == 2
+    assert resposta.get_json()["cidade"] == "Campinas"
+    mock_conexao.commit.assert_called_once()
+
+
+@patch("app.conecta")
+def test_cadastrar_imovel_incompleto(mock_conecta, client):
+    # Given
+    dados = {"cidade": "Campinas"}
+
+    # When
+    resposta = client.post("/imoveis", json=dados)
+
+    # Then
+    assert resposta.status_code == 400
+    assert resposta.get_json() == {"erro": "dados incompletos"}
+    mock_conecta.assert_not_called()
