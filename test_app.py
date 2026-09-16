@@ -58,3 +58,40 @@ def test_listar_imoveis_sem_resultado(mock_conecta, client):
     # Then
     assert resposta.status_code == 404
     assert resposta.get_json() == {"erro": "nenhum imovel encontrado"}
+
+
+@patch("app.conecta")
+def test_buscar_imovel(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = IMOVEL
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/1")
+
+    # Then
+    assert resposta.status_code == 200
+    assert resposta.get_json() == IMOVEL
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT * FROM imoveis WHERE id = %s", (1,)
+    )
+
+
+@patch("app.conecta")
+def test_buscar_imovel_inexistente(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = None
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/999")
+
+    # Then
+    assert resposta.status_code == 404
+    assert resposta.get_json() == {"erro": "imovel nao encontrado"}
