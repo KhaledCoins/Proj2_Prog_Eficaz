@@ -139,3 +139,54 @@ def test_cadastrar_imovel_incompleto(mock_conecta, client):
     assert resposta.status_code == 400
     assert resposta.get_json() == {"erro": "dados incompletos"}
     mock_conecta.assert_not_called()
+
+
+@patch("app.conecta")
+def test_atualizar_imovel(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = (1,)
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.put("/imoveis/1", json=NOVO_IMOVEL)
+
+    # Then
+    assert resposta.status_code == 200
+    assert resposta.get_json()["id"] == 1
+    assert resposta.get_json()["cidade"] == "Campinas"
+    mock_conexao.commit.assert_called_once()
+
+
+@patch("app.conecta")
+def test_atualizar_imovel_inexistente(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = None
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.put("/imoveis/999", json=NOVO_IMOVEL)
+
+    # Then
+    assert resposta.status_code == 404
+    assert resposta.get_json() == {"erro": "imovel nao encontrado"}
+    mock_conexao.commit.assert_not_called()
+
+
+@patch("app.conecta")
+def test_atualizar_imovel_incompleto(mock_conecta, client):
+    # Given
+    dados = {"cidade": "Campinas"}
+
+    # When
+    resposta = client.put("/imoveis/1", json=dados)
+
+    # Then
+    assert resposta.status_code == 400
+    assert resposta.get_json() == {"erro": "dados incompletos"}
+    mock_conecta.assert_not_called()
