@@ -2,12 +2,23 @@ import os
 
 import mysql.connector
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 load_dotenv()
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
+
+CAMPOS = [
+    "logradouro",
+    "tipo_logradouro",
+    "bairro",
+    "cidade",
+    "cep",
+    "tipo",
+    "valor",
+    "data_aquisicao",
+]
 
 
 def conecta():
@@ -46,6 +57,30 @@ def buscar_imovel(imovel_id):
     if imovel is None:
         return jsonify({"erro": "imovel nao encontrado"}), 404
     return jsonify(imovel), 200
+
+
+@app.route("/imoveis", methods=["POST"])
+def cadastrar_imovel():
+    dados = request.get_json(silent=True)
+    if not dados or any(campo not in dados for campo in CAMPOS):
+        return jsonify({"erro": "dados incompletos"}), 400
+
+    conexao = conecta()
+    cursor = conexao.cursor()
+    cursor.execute(
+        """
+        INSERT INTO imoveis
+            (logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        tuple(dados[campo] for campo in CAMPOS),
+    )
+    conexao.commit()
+    dados["id"] = cursor.lastrowid
+    cursor.close()
+    conexao.close()
+
+    return jsonify(dados), 201
 
 
 if __name__ == "__main__":
