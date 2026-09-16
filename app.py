@@ -34,5 +34,19 @@ def listar_imoveis():
     return jsonify(imoveis), 200
 
 
+@app.route("/imoveis/<int:imovel_id>", methods=["GET"])
+def buscar_imovel(imovel_id):
+    conexao = conecta()
+    cursor = conexao.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM imoveis WHERE id = %s", (imovel_id,))
+    imovel = cursor.fetchone()
+    cursor.close()
+    conexao.close()
+
+    if imovel is None:
+        return jsonify({"erro": "imovel nao encontrado"}), 404
+    return jsonify(imovel), 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
