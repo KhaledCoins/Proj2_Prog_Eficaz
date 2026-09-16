@@ -83,5 +83,38 @@ def cadastrar_imovel():
     return jsonify(dados), 201
 
 
+@app.route("/imoveis/<int:imovel_id>", methods=["PUT"])
+def atualizar_imovel(imovel_id):
+    dados = request.get_json(silent=True)
+    if not dados or any(campo not in dados for campo in CAMPOS):
+        return jsonify({"erro": "dados incompletos"}), 400
+
+    conexao = conecta()
+    cursor = conexao.cursor()
+    cursor.execute("SELECT id FROM imoveis WHERE id = %s", (imovel_id,))
+    existe = cursor.fetchone()
+
+    if existe is None:
+        cursor.close()
+        conexao.close()
+        return jsonify({"erro": "imovel nao encontrado"}), 404
+
+    cursor.execute(
+        """
+        UPDATE imoveis
+        SET logradouro = %s, tipo_logradouro = %s, bairro = %s, cidade = %s,
+            cep = %s, tipo = %s, valor = %s, data_aquisicao = %s
+        WHERE id = %s
+        """,
+        tuple(dados[campo] for campo in CAMPOS) + (imovel_id,),
+    )
+    conexao.commit()
+    cursor.close()
+    conexao.close()
+
+    dados["id"] = imovel_id
+    return jsonify(dados), 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
