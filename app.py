@@ -2,7 +2,7 @@ import os
 
 import mysql.connector
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, url_for
 
 load_dotenv()
 
@@ -31,6 +31,16 @@ def conecta():
     )
 
 
+def com_links(imovel):
+    imovel["_links"] = {
+        "self": url_for("buscar_imovel", imovel_id=imovel["id"]),
+        "todos": url_for("listar_imoveis"),
+        "tipo": url_for("buscar_por_tipo", tipo=imovel["tipo"]),
+        "cidade": url_for("buscar_por_cidade", cidade=imovel["cidade"]),
+    }
+    return imovel
+
+
 def consulta(sql, *parametros):
     conexao = conecta()
     cursor = conexao.cursor(dictionary=True)
@@ -38,7 +48,7 @@ def consulta(sql, *parametros):
     imoveis = cursor.fetchall()
     cursor.close()
     conexao.close()
-    return imoveis
+    return [com_links(imovel) for imovel in imoveis]
 
 
 @app.route("/imoveis", methods=["GET"])
@@ -61,7 +71,7 @@ def buscar_imovel(imovel_id):
 
     if imovel is None:
         return jsonify({"erro": "imovel nao encontrado"}), 404
-    return jsonify(imovel), 200
+    return jsonify(com_links(imovel)), 200
 
 
 @app.route("/imoveis", methods=["POST"])
@@ -85,7 +95,8 @@ def cadastrar_imovel():
     cursor.close()
     conexao.close()
 
-    return jsonify(dados), 201
+    com_links(dados)
+    return jsonify(dados), 201, {"Location": dados["_links"]["self"]}
 
 
 @app.route("/imoveis/<int:imovel_id>", methods=["PUT"])
@@ -118,7 +129,7 @@ def atualizar_imovel(imovel_id):
     conexao.close()
 
     dados["id"] = imovel_id
-    return jsonify(dados), 200
+    return jsonify(com_links(dados)), 200
 
 
 @app.route("/imoveis/<int:imovel_id>", methods=["DELETE"])
