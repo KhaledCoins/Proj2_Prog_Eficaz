@@ -31,14 +31,19 @@ def conecta():
     )
 
 
-@app.route("/imoveis", methods=["GET"])
-def listar_imoveis():
+def consulta(sql, *parametros):
     conexao = conecta()
     cursor = conexao.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM imoveis")
+    cursor.execute(sql, *parametros)
     imoveis = cursor.fetchall()
     cursor.close()
     conexao.close()
+    return imoveis
+
+
+@app.route("/imoveis", methods=["GET"])
+def listar_imoveis():
+    imoveis = consulta("SELECT * FROM imoveis")
 
     if not imoveis:
         return jsonify({"erro": "nenhum imovel encontrado"}), 404
@@ -133,12 +138,7 @@ def remover_imovel(imovel_id):
 
 @app.route("/imoveis/tipo/<tipo>", methods=["GET"])
 def buscar_por_tipo(tipo):
-    conexao = conecta()
-    cursor = conexao.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM imoveis WHERE tipo = %s", (tipo,))
-    imoveis = cursor.fetchall()
-    cursor.close()
-    conexao.close()
+    imoveis = consulta("SELECT * FROM imoveis WHERE tipo = %s", (tipo,))
 
     if not imoveis:
         return jsonify({"erro": "nenhum imovel encontrado"}), 404
@@ -147,12 +147,7 @@ def buscar_por_tipo(tipo):
 
 @app.route("/imoveis/cidade/<cidade>", methods=["GET"])
 def buscar_por_cidade(cidade):
-    conexao = conecta()
-    cursor = conexao.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM imoveis WHERE cidade = %s", (cidade,))
-    imoveis = cursor.fetchall()
-    cursor.close()
-    conexao.close()
+    imoveis = consulta("SELECT * FROM imoveis WHERE cidade = %s", (cidade,))
 
     if not imoveis:
         return jsonify({"erro": "nenhum imovel encontrado"}), 404
