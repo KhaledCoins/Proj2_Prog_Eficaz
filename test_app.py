@@ -302,3 +302,57 @@ def test_buscar_por_cidade_sem_resultado(mock_conecta, client):
     # Then
     assert resposta.status_code == 404
     assert resposta.get_json() == {"erro": "nenhum imovel encontrado"}
+
+
+@patch("app.conecta")
+def test_listar_imoveis_traz_links(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = [IMOVEL]
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis")
+
+    # Then
+    links = resposta.get_json()[0]["_links"]
+    assert links["self"] == "/imoveis/1"
+    assert links["tipo"] == "/imoveis/tipo/apartamento"
+    assert links["cidade"] == "/imoveis/cidade/Sao%20Paulo"
+
+
+@patch("app.conecta")
+def test_buscar_imovel_traz_links(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = IMOVEL
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/1")
+
+    # Then
+    links = resposta.get_json()["_links"]
+    assert links["self"] == "/imoveis/1"
+    assert links["todos"] == "/imoveis"
+
+
+@patch("app.conecta")
+def test_cadastrar_imovel_informa_location(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.lastrowid = 2
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.post("/imoveis", json=NOVO_IMOVEL)
+
+    # Then
+    assert resposta.headers["Location"] == "/imoveis/2"
+    assert resposta.get_json()["_links"]["self"] == "/imoveis/2"
