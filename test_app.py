@@ -228,3 +228,77 @@ def test_remover_imovel_inexistente(mock_conecta, client):
     # Then
     assert resposta.status_code == 404
     assert resposta.get_json() == {"erro": "imovel nao encontrado"}
+
+
+@patch("app.conecta")
+def test_buscar_por_tipo(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = [IMOVEL]
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/tipo/apartamento")
+
+    # Then
+    assert resposta.status_code == 200
+    assert resposta.get_json() == [IMOVEL]
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT * FROM imoveis WHERE tipo = %s", ("apartamento",)
+    )
+
+
+@patch("app.conecta")
+def test_buscar_por_tipo_sem_resultado(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = []
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/tipo/castelo")
+
+    # Then
+    assert resposta.status_code == 404
+    assert resposta.get_json() == {"erro": "nenhum imovel encontrado"}
+
+
+@patch("app.conecta")
+def test_buscar_por_cidade(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = [IMOVEL]
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/cidade/Sao Paulo")
+
+    # Then
+    assert resposta.status_code == 200
+    assert resposta.get_json() == [IMOVEL]
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT * FROM imoveis WHERE cidade = %s", ("Sao Paulo",)
+    )
+
+
+@patch("app.conecta")
+def test_buscar_por_cidade_sem_resultado(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = []
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.get("/imoveis/cidade/Atlantida")
+
+    # Then
+    assert resposta.status_code == 404
+    assert resposta.get_json() == {"erro": "nenhum imovel encontrado"}
