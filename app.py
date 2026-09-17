@@ -116,5 +116,20 @@ def atualizar_imovel(imovel_id):
     return jsonify(dados), 200
 
 
+@app.route("/imoveis/<int:imovel_id>", methods=["DELETE"])
+def remover_imovel(imovel_id):
+    conexao = conecta()
+    cursor = conexao.cursor()
+    cursor.execute("DELETE FROM imoveis WHERE id = %s", (imovel_id,))
+    conexao.commit()
+    removidos = cursor.rowcount
+    cursor.close()
+    conexao.close()
+
+    if removidos == 0:
+        return jsonify({"erro": "imovel nao encontrado"}), 404
+    return "", 204
+
+
 if __name__ == "__main__":
     app.run(debug=True)
