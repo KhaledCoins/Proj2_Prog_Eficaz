@@ -190,3 +190,41 @@ def test_atualizar_imovel_incompleto(mock_conecta, client):
     assert resposta.status_code == 400
     assert resposta.get_json() == {"erro": "dados incompletos"}
     mock_conecta.assert_not_called()
+
+
+@patch("app.conecta")
+def test_remover_imovel(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.rowcount = 1
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.delete("/imoveis/1")
+
+    # Then
+    assert resposta.status_code == 204
+    assert resposta.data == b""
+    mock_cursor.execute.assert_called_once_with(
+        "DELETE FROM imoveis WHERE id = %s", (1,)
+    )
+    mock_conexao.commit.assert_called_once()
+
+
+@patch("app.conecta")
+def test_remover_imovel_inexistente(mock_conecta, client):
+    # Given
+    mock_conexao = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conexao.cursor.return_value = mock_cursor
+    mock_cursor.rowcount = 0
+    mock_conecta.return_value = mock_conexao
+
+    # When
+    resposta = client.delete("/imoveis/999")
+
+    # Then
+    assert resposta.status_code == 404
+    assert resposta.get_json() == {"erro": "imovel nao encontrado"}
